@@ -19,15 +19,27 @@ import java.util.Set;
  */
 public class PermissionUtils {
     public static boolean hasPermission(String permission) {
-        PermissionCache permissionCache = CommonBeanFactory.getBean(PermissionCache.class);
+        // Validate session first (fail fast)
+        SessionUser user = SessionUtils.getUser();
+        if (user == null) {
+            throw new GenericException("User session not available");
+        }
         String userId = SessionUtils.getUserId();
         String organizationId = OrganizationContext.getOrganizationId();
-        Set<String> permissionIds = Objects.requireNonNull(permissionCache).getPermissionIds(userId, organizationId);
-        SessionUser user = Objects.requireNonNull(SessionUtils.getUser());
+
+        // Admin bypass check (early exit)
         if (Strings.CS.equals(InternalUser.ADMIN.getValue(), user.getId())) {
             // admin 用户拥有所有权限
             return true;
         }
+
+        // Fetch permissions only for non-admin users
+        PermissionCache permissionCache = CommonBeanFactory.getBean(PermissionCache.class);
+        if (permissionCache == null) {
+            throw new GenericException("PermissionCache bean not available");
+        }
+        Set<String> permissionIds = permissionCache.getPermissionIds(userId, organizationId);
+
         // 判断是否拥有权限
         return permissionIds.contains(permission);
     }
@@ -38,8 +50,20 @@ public class PermissionUtils {
             resourceTabEnableDTO.setAll(true);
             resourceTabEnableDTO.setDept(true);
         }
+
+        // Null-safe iteration
+        if (CollectionUtils.isEmpty(rolePermissions)) {
+            return resourceTabEnableDTO;
+        }
+
         for (RolePermissionDTO rolePermission : rolePermissions) {
-            if (!rolePermission.getPermissions().contains(permission)) {
+            if (rolePermission == null) {
+                continue;
+            }
+
+            Set<String> permissions = Optional.ofNullable(rolePermission.getPermissions())
+                    .orElse(Collections.emptySet());
+            if (!permissions.contains(permission)) {
                 // 判断权限
                 continue;
             }
