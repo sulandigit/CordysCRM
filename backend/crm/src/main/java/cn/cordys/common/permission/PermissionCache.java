@@ -25,8 +25,12 @@ public class PermissionCache {
     @Cacheable(value = "permission_cache", key = "#userId + ':' +  #orgId")
     public List<RolePermissionDTO> getRolePermissions(String userId, String orgId) {
         RoleService roleService = CommonBeanFactory.getBean(RoleService.class);
+        if (roleService == null) {
+            throw new GenericException("RoleService bean not available");
+        }
         // 获取角色
-        List<RoleDataScopeDTO> roleOptions = Objects.requireNonNull(roleService).getRoleOptions(userId, orgId);
+        List<RoleDataScopeDTO> roleOptions = Optional.ofNullable(roleService.getRoleOptions(userId, orgId))
+                .orElse(new ArrayList<>(0));
         List<String> roleIds = roleOptions.stream()
                 .map(RoleDataScopeDTO::getId).collect(Collectors.toList());
 
@@ -35,7 +39,8 @@ public class PermissionCache {
         }
 
         // 获取角色权限
-        List<RolePermission> permissions = roleService.getPermissions(roleIds);
+        List<RolePermission> permissions = Optional.ofNullable(roleService.getPermissions(roleIds))
+                .orElse(List.of());
         Map<String, List<RolePermission>> rolePermissionMap = permissions.stream()
                 .collect(Collectors.groupingBy(RolePermission::getRoleId));
 
@@ -59,9 +64,15 @@ public class PermissionCache {
     }
 
     public Set<String> getPermissionIds(String userId, String orgId) {
-        List<RolePermissionDTO> rolePermissions = Objects.requireNonNull(CommonBeanFactory.getBean(PermissionCache.class)).getRolePermissions(userId, orgId);
+        PermissionCache permissionCache = CommonBeanFactory.getBean(PermissionCache.class);
+        if (permissionCache == null) {
+            throw new GenericException("PermissionCache bean not available");
+        }
+        List<RolePermissionDTO> rolePermissions = Optional.ofNullable(permissionCache.getRolePermissions(userId, orgId))
+                .orElse(new ArrayList<>(0));
         return rolePermissions.stream()
-                .flatMap(rolePermissionDTO -> rolePermissionDTO.getPermissions().stream())
+                .flatMap(rolePermissionDTO -> Optional.ofNullable(rolePermissionDTO.getPermissions())
+                        .orElse(Collections.emptySet()).stream())
                 .collect(Collectors.toSet());
     }
 
