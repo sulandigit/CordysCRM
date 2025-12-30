@@ -6,21 +6,30 @@ import lombok.Data;
 import java.util.List;
 
 /**
+ * Permission Definition Item
+ * Hierarchical menu structure for permission configuration UI
+ * Supports recursive nesting for sub-menus
+ *
  * @author jianxing
  */
 @Data
-@Schema(description = "权限设置菜单项")
+@Schema(description = "Permission settings menu item")
 public class PermissionDefinitionItem {
-    @Schema(description = "菜单项ID")
+    @Schema(description = "Menu item ID")
     private String id;
-    @Schema(description = "菜单项名称")
+    
+    @Schema(description = "Menu item name")
     private String name;
-    @Schema(description = "是否是企业版菜单")
+    
+    @Schema(description = "Whether this is an enterprise edition menu")
     private Boolean license = false;
-    @Schema(description = "菜单是否全选")
+    
+    @Schema(description = "Whether all permissions in this menu are selected")
     private Boolean enable = false;
-    @Schema(description = "菜单下的权限列表")
+    
+    @Schema(description = "List of permissions under this menu item")
     private List<Permission> permissions;
-    @Schema(description = "子菜单")
+    
+    @Schema(description = "Child sub-menu items (recursive structure)")
     private List<PermissionDefinitionItem> children;
 }
