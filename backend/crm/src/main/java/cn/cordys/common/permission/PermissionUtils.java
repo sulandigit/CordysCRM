@@ -15,11 +15,22 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
+ * Permission Utilities
+ * Static helper methods for permission checking and authorization
+ *
  * @author jianxing
  */
 public class PermissionUtils {
+    /**
+     * Check if the current user has the specified permission
+     * Admin users automatically have all permissions
+     *
+     * @param permission Permission ID to check
+     * @return true if user has permission, false otherwise
+     * @throws GenericException if session is not available or beans cannot be retrieved
+     */
     public static boolean hasPermission(String permission) {
-        // Validate session first (fail fast)
+        // Validate session first (fail fast approach)
         SessionUser user = SessionUtils.getUser();
         if (user == null) {
             throw new GenericException("User session not available");
@@ -27,9 +38,8 @@ public class PermissionUtils {
         String userId = SessionUtils.getUserId();
         String organizationId = OrganizationContext.getOrganizationId();
 
-        // Admin bypass check (early exit)
+        // Admin bypass: admins have all permissions (early exit for performance)
         if (Strings.CS.equals(InternalUser.ADMIN.getValue(), user.getId())) {
-            // admin 用户拥有所有权限
             return true;
         }
 
@@ -40,40 +50,52 @@ public class PermissionUtils {
         }
         Set<String> permissionIds = permissionCache.getPermissionIds(userId, organizationId);
 
-        // 判断是否拥有权限
+        // Check if user's permission set contains the requested permission
         return permissionIds.contains(permission);
     }
 
+    /**
+     * Get tab enable configuration based on user permissions and role data scope
+     * Determines which UI tabs (All/Dept) should be visible for the user
+     *
+     * @param userId User ID
+     * @param permission Permission ID to check
+     * @param rolePermissions List of user's role permissions with data scope
+     * @return ResourceTabEnableDTO indicating which tabs are enabled
+     */
     public static ResourceTabEnableDTO getTabEnableConfig(String userId, String permission, List<RolePermissionDTO> rolePermissions) {
         ResourceTabEnableDTO resourceTabEnableDTO = new ResourceTabEnableDTO();
+        // Admin users can see all tabs
         if (Strings.CS.equals(userId, InternalUser.ADMIN.getValue())) {
             resourceTabEnableDTO.setAll(true);
             resourceTabEnableDTO.setDept(true);
         }
 
-        // Null-safe iteration
+        // Null-safe iteration: early return if no role permissions
         if (CollectionUtils.isEmpty(rolePermissions)) {
             return resourceTabEnableDTO;
         }
 
         for (RolePermissionDTO rolePermission : rolePermissions) {
+            // Skip null entries defensively
             if (rolePermission == null) {
                 continue;
             }
 
+            // Null-safe permission check with empty set fallback
             Set<String> permissions = Optional.ofNullable(rolePermission.getPermissions())
                     .orElse(Collections.emptySet());
             if (!permissions.contains(permission)) {
-                // 判断权限
+                // User doesn't have this permission in current role
                 continue;
             }
+            // Enable "All" tab for ALL or DEPT_CUSTOM data scope
             if (Strings.CS.equalsAny(rolePermission.getDataScope(), RoleDataScope.ALL.name(), RoleDataScope.DEPT_CUSTOM.name())) {
-                // 数据权限为全部或指定部门，显示所有tab
                 resourceTabEnableDTO.setAll(true);
             }
+            // Enable "Dept" tab for ALL, DEPT_CUSTOM, or DEPT_AND_CHILD data scope
             if (Strings.CS.equalsAny(rolePermission.getDataScope(), RoleDataScope.ALL.name(), RoleDataScope.DEPT_CUSTOM.name(),
                     RoleDataScope.DEPT_AND_CHILD.name())) {
-                // 数据权限为全部或部门，显示部门tab
                 resourceTabEnableDTO.setDept(true);
             }
         }
