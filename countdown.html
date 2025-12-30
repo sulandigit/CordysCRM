@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025新年倒计时</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .time-display {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .countdown {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .time-box {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            border-radius: 15px;
+            min-width: 120px;
+            backdrop-filter: blur(5px);
+        }
+
+        .time-value {
+            font-size: 4em;
+            font-weight: bold;
+            display: block;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .time-label {
+            font-size: 1.2em;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+
+        .message {
+            margin-top: 30px;
+            font-size: 1.5em;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            
+            .time-box {
+                min-width: 80px;
+                padding: 20px;
+            }
+            
+            .time-value {
+                font-size: 2.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 2026新年倒计时 🎉</h1>
+        <div class="time-display">
+            北京时间: <span id="currentTime"></span>
+        </div>
+        <div class="countdown" id="countdown">
+            <div class="time-box">
+                <span class="time-value" id="days">0</span>
+                <div class="time-label">天</div>
+            </div>
+            <div class="time-box">
+                <span class="time-value" id="hours">0</span>
+                <div class="time-label">时</div>
+            </div>
+            <div class="time-box">
+                <span class="time-value" id="minutes">0</span>
+                <div class="time-label">分</div>
+            </div>
+            <div class="time-box">
+                <span class="time-value" id="seconds">0</span>
+                <div class="time-label">秒</div>
+            </div>
+        </div>
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        function updateCountdown() {
+            const now = new Date();
+            const beijingTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+            
+            document.getElementById('currentTime').textContent = beijingTime.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+
+            const newYear = new Date('2026-01-01T00:00:00+08:00');
+            const diff = newYear - beijingTime;
+
+            if (diff <= 0) {
+                document.getElementById('countdown').innerHTML = '<div class="time-box"><span class="time-value">🎊</span></div>';
+                document.getElementById('message').textContent = '新年快乐！Happy New Year!';
+                return;
+            }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            document.getElementById('days').textContent = String(days).padStart(2, '0');
+            document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+            document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+            document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+
+            if (days === 0 && hours === 0 && minutes < 10) {
+                document.getElementById('message').textContent = '马上就要到新年啦！🎆';
+            } else if (days === 0) {
+                document.getElementById('message').textContent = '今天就是跨年夜！🎉';
+            } else if (days === 1) {
+                document.getElementById('message').textContent = '还有1天就是新年了！';
+            } else {
+                document.getElementById('message').textContent = `距离2026年还有 ${days} 天`;
+            }
+        }
+
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    </script>
+</body>
+</html>
