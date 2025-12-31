@@ -14,35 +14,41 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Configuration
 public class AsyncConfig implements AsyncConfigurer {
 
-    // 核心线程数
-    private static final int CORE_POOL_SIZE = 20;
-    // 最大线程数
-    private static final int MAX_POOL_SIZE = 20;
-    // 空闲线程最大存活秒数
+    private static final int CORE_POOL_SIZE = 10;
+    private static final int MAX_POOL_SIZE = 50;
+    private static final int QUEUE_CAPACITY = 500;
     private static final int KEEP_ALIVE_SECONDS = 60;
-    // 关闭时最大等待秒数
     private static final int AWAIT_TERMINATION_SECONDS = 60;
 
-    // 同时暴露默认名称，便于 @Async 自动装配
     @Bean(name = {"threadPoolTaskExecutor", "applicationTaskExecutor"})
     public ThreadPoolTaskExecutor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(CORE_POOL_SIZE);
         executor.setMaxPoolSize(MAX_POOL_SIZE);
+        executor.setQueueCapacity(QUEUE_CAPACITY);
         executor.setKeepAliveSeconds(KEEP_ALIVE_SECONDS);
         executor.setAllowCoreThreadTimeOut(true);
         executor.setThreadNamePrefix("cs-async-task-");
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(AWAIT_TERMINATION_SECONDS);
+        executor.setAwaitTerminationMillis(0);
+        executor.initialize();
         return executor;
     }
 
-    /**
-     * 捕获 @Async void 方法未处理的异常
-     */
     @Override
     public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
-        return (ex, method, params) -> LogUtils.error("异步任务异常: " + method.getName() + " - " + ex.getMessage());
+        return (ex, method, params) -> {
+            StringBuilder sb = new StringBuilder("异步任务异常: [方法名: ")
+                .append(method.getName())
+                .append(", 异常信息: ")
+                .append(ex.getMessage());
+            if (params != null && params.length > 0) {
+                sb.append(", 参数数量: ").append(params.length);
+            }
+            sb.append("]");
+            LogUtils.error(sb.toString(), ex);
+        };
     }
 }
