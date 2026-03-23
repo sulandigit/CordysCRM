@@ -1,6 +1,5 @@
 package cn.cordys.common.utils;
 
-
 import cn.cordys.common.constants.InternalUserView;
 import cn.cordys.common.dto.BaseTreeNode;
 import cn.cordys.common.dto.ChartAnalysisDbRequest;
@@ -24,7 +23,6 @@ import cn.cordys.security.SessionUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
-import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -44,7 +42,6 @@ import static cn.cordys.common.utils.IndustryUtils.getIndustries;
  * 2. 预先过滤不合法的查询条件
  * 3. 处理成员选项中的 CURRENT_USER
  */
-@Aspect
 @Component
 public class ConditionFilterUtils {
 
@@ -157,7 +154,6 @@ public class ConditionFilterUtils {
                 item.setValue(CollectionUtils.isEmpty(attachmentIds) ? attachmentNames : attachmentIds);
             }
 
-
             if (item.getValue() != null && Strings.CS.equals(item.getType(), FieldType.INDUSTRY.name())) {
                 String str = item.getValue().toString()
                         .replace("[", "")
@@ -193,7 +189,6 @@ public class ConditionFilterUtils {
         return null;
     }
 
-
     /**
      * 包含新增子节点数据
      *
@@ -202,17 +197,15 @@ public class ConditionFilterUtils {
     private static void buildConditions(List<FilterCondition> conditions, List<BaseTreeNode> tree) {
         if (CollectionUtils.isNotEmpty(conditions)) {
             conditions.forEach(condition -> {
-                if (CollectionUtils.isNotEmpty(condition.getContainChildIds())) {
-                    condition.getContainChildIds().forEach(id -> {
-                        List<String> ids = getIds(tree, id);
-                        ids.addAll(condition.getContainChildIds());
-                        condition.setValue(ids.stream().distinct().toList());
-                    });
+                List<String> containChildIds = condition.getContainChildIds();
+                if (CollectionUtils.isNotEmpty(containChildIds)) {
+                    List<String> allIds = new ArrayList<>(containChildIds);
+                    containChildIds.forEach(id -> allIds.addAll(getIds(tree, id)));
+                    condition.setValue(allIds.stream().distinct().toList());
                 }
             });
         }
     }
-
 
     public static List<String> getIds(List<BaseTreeNode> tree, String targetId) {
         List<String> ids = new ArrayList<>();
